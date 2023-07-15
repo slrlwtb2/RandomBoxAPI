@@ -1,0 +1,3 @@
+[submodule "RandomBoxAPI"]
+	path = RandomBoxAPI
+	url = https://github.com/slrlwtb2/RandomBoxAPI
