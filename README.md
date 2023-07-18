@@ -33,6 +33,7 @@ You can access the RandomBox web application by checking my github [HERE](https:
    password) and generates a JWT token for authentication.
 
 ---
+
 ![enter image description here](https://i.postimg.cc/ZKkx9T3C/Screenshot-2023-07-15-173019.png)
 
 **Item Controller**
