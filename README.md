@@ -69,8 +69,6 @@ You can access the RandomBox web application by checking my github [HERE](https:
    based on the box ID and user ID.
  - BuyBox: An endpoint for buying a box and adding it to the inventory
    based on the box ID and user ID.
- - UploadPicture: An endpoint for uploading an image to an item based on
-   its ID, associating the image with the item.
 
 ## ER DIAGRAM
 
