@@ -17,5 +17,7 @@ namespace LootBoxAPI.Repository.Interfaces
         void Save();
         Task<List<BoxItem>> GetItemInBox(int boxid);
         string GetItemName(int itemid);
+        string GetItemRarity(int itemid);
+        float GetItemPrice(int itemid);
     }
 }

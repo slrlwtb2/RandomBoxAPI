@@ -48,7 +48,9 @@ namespace LootBoxAPI.Repository
             {
                 Username = _userRepository.GetUsername(i.UserId),
                 ItemId= i.ItemId,
+                Rarity = _itemRepository.GetItemRarity(i.ItemId),
                 ItemName = _itemRepository.GetItemName(i.ItemId),
+                Price = _itemRepository.GetItemPrice(i.ItemId),
                 Quantity = i.Quantity
             }).ToList();
 

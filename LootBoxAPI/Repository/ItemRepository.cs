@@ -84,5 +84,17 @@ namespace LootBoxAPI.Repository
             var item =  _context.Items.FirstOrDefault(b => b.Id == itemid);
             return item.Name;
         }
+
+        public string GetItemRarity(int itemid)
+        {
+            var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
+            return item.Rarity.ToString();
+        }
+
+        public float GetItemPrice(int itemid)
+        {
+            var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
+            return item.Price;
+        }
     }
 }
