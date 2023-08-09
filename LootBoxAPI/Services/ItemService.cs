@@ -1,9 +1,9 @@
 ﻿using LootBoxAPI.Data;
 using LootBoxAPI.Models;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using RandomBoxAPI.Models;
+using RandomBoxAPI.Repository.Interfaces;
 using System;
 using static LootBoxAPI.Models.Item;
 
@@ -11,12 +11,10 @@ namespace LootBoxAPI.Services
 {
     public class ItemService : IItemService
     {
-        private readonly IInventoryRepository _inventoryRepository;
-        private readonly IItemRepository _itemsRepository;
+        private readonly IRepository<Item,int> _itemsRepository;
         private readonly ApplicationDbContext _context;
-        public ItemService(IInventoryRepository inventoryRepository,IItemRepository itemListRepository,ApplicationDbContext context)
+        public ItemService(IRepository<Item,int> itemListRepository,ApplicationDbContext context)
         {
-            _inventoryRepository= inventoryRepository;
             _itemsRepository= itemListRepository;
             _context = context;
         }
@@ -34,7 +32,6 @@ namespace LootBoxAPI.Services
             };
             return item;
         }
-
         public Item CreateItem(string name, int rarity, float price)
         {
             CreateItemValidation(name, rarity, price);
@@ -64,10 +61,15 @@ namespace LootBoxAPI.Services
                 throw new ArgumentException("The 'price' parameter must be a positive value.", nameof(price));
             }
         }
-        public async Task<bool> BoxAndItemExist(int itemid1, int itemid2)
+        public async Task<bool> BoxAndItemExist(int itemId, int boxId)
         {
-            var items = await _itemsRepository.ItemExist(itemid1) != false && await _itemsRepository.ItemExist(itemid2);
-            return items;
+            var box = await _itemsRepository.GetById(itemId);
+            var item = await _itemsRepository.GetById(boxId);
+            if (item != null && box != null)
+            {
+                if (AreItem(item) && AreBox(box)) return true; 
+            }
+            return false;
         }
         public bool AreBox(Item box)
         {
@@ -79,6 +81,9 @@ namespace LootBoxAPI.Services
         }
         public async Task<bool> AlreadyContainItemInBox(int boxid, int itemid)
         {
+            var item = _itemsRepository.GetById(itemid);
+            var box = _itemsRepository.GetById(boxid);
+            if (item == null || box == null) return false;
             return await _context.BoxItems.AnyAsync(b => b.BoxId == boxid && b.ItemId == itemid);
         }
         public BoxItem CreateBoxItemList(BoxItem boxItem,int boxid,int itemid)
@@ -89,6 +94,26 @@ namespace LootBoxAPI.Services
                 ItemId = itemid
             };
             return boxItem;
+        }
+        public async Task<List<BoxItem>> GetItemInBox(int boxid)
+        {
+            var items = await _context.BoxItems.Where(b => b.BoxId == boxid).ToListAsync();
+            return items;
+        }
+        public string GetItemName(int itemid)
+        {
+            var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
+            return item.Name;
+        }
+        public string GetItemRarity(int itemid)
+        {
+            var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
+            return item.Rarity.ToString();
+        }
+        public float GetItemPrice(int itemid)
+        {
+            var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
+            return item.Price;
         }
 
     }

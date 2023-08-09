@@ -1,114 +1,58 @@
-﻿using LootBoxAPI.Data;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using LootBoxAPI.Data;
 using LootBoxAPI.DTO;
 using LootBoxAPI.Models;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using RandomBoxAPI.Repository.Interfaces;
 
 namespace LootBoxAPI.Repository
 {
-    public class InventoryRepository : IInventoryRepository
+    public class InventoryRepository : IRepository<Inventory, int>
     {
         private readonly ApplicationDbContext _context;
-        private readonly IItemRepository _itemRepository;
-        private readonly IUserRepository _userRepository;
-        public InventoryRepository(IItemRepository itemListRepository,
-            IUserRepository userRepository,
-            ApplicationDbContext context)
+        public InventoryRepository (ApplicationDbContext context)
         {
             _context = context;
-            _itemRepository = itemListRepository;
-            _userRepository= userRepository;
         }
-        public async Task RemoveItemInInventroy(int itemId, int userId) //D
+        public async Task<List<Inventory>> GetAll()
         {
-            if (await _userRepository.UserExist(userId) && await _itemRepository.ItemExist(itemId))
-            {
-                if (await _context.Inventories.AnyAsync(inv => inv.UserId == userId && inv.ItemId == itemId))
-                {
-                    var originalInv = await _context.Inventories.FirstOrDefaultAsync(inv => inv.ItemId == itemId && inv.UserId == userId);
-                    var updateInv = originalInv;
-                    if (originalInv.Quantity > 1)
-                    {
-                        updateInv.Quantity -= 1;
-                        await UpdateInventory(originalInv, updateInv);
-                    }
-                    else
-                    {
-                        _context.Inventories.Remove(originalInv);
-                    } 
-                }
-            }
+            return  await _context.Inventories.ToListAsync();
         }
 
-        public async Task<List<InventoryDTO>> GetInventoryItemListByUserIdAsync(int id) //R
+        public async Task<Inventory> GetById(int id)
         {
-            var inv = await _context.Inventories.Where(inv => inv.UserId == id && inv.Quantity>0).OrderBy(inv => inv.ItemId).ToListAsync();
-            var inventoryDTOList = inv.Select(i => new InventoryDTO
-            {
-                Username = _userRepository.GetUsername(i.UserId),
-                ItemId= i.ItemId,
-                Rarity = _itemRepository.GetItemRarity(i.ItemId),
-                ItemName = _itemRepository.GetItemName(i.ItemId),
-                Price = _itemRepository.GetItemPrice(i.ItemId),
-                Quantity = i.Quantity
-            }).ToList();
-
-            return inventoryDTOList;
+            return await _context.Inventories.FindAsync(id);
         }
 
-        public async Task<List<InventoryDTO>> GetInventories() //R
+        public async Task Delete(int id)
         {
-            return await _context.Inventories.Select(inv => new InventoryDTO {
-                
-            } ).ToListAsync();
+            var inv = await _context.Inventories.FirstOrDefaultAsync(i => i.Id == id);
+            if (inv != null) _context.Inventories.Remove(inv);
         }
 
 
-        public async Task<bool> InventoryExist(int id) //R
+
+        public void Update(Inventory entity)
         {
-            var inv = await _context.Inventories.FindAsync(id);
-            return inv!= null;
+            _context.Inventories.Update(entity);
         }
 
-        public async void Save()
+        public async Task Save()
         {
             await _context.SaveChangesAsync();
         }
 
-        public async Task<Inventory> Add(Inventory inventory)
+        public async Task Add(Inventory entity)
         {
-            var addedInventory = await _context.Inventories.AddAsync(inventory);
-            return addedInventory.Entity;
-        }
-        public async Task UpdateInventory(Inventory original,Inventory update)
-        {
-            var existingItem = await GetInventorybyUserId(original.Id);
-            if (existingItem != null)
-            {
-                _context.Entry(existingItem).CurrentValues.SetValues(update);
-                //_context.Entry(existingItem).State = EntityState.Modified;
-            }
-
-        }
-        public async Task<Inventory> AddOrUpdate(Inventory inventory)
-        {
-            if (inventory.Id == 0)
-            {
-                var addedInventory = await _context.Inventories.AddAsync(inventory);
-                return addedInventory.Entity;
-            }
-            else
-            {
-                _context.Inventories.Update(inventory);
-                return inventory;
-            }
+            await _context.Inventories.AddAsync(entity);
         }
 
-        public async Task<Inventory?> GetInventorybyUserId(int id)
+        public async Task<bool> Exist(int id)
         {
-            var inv = await _context.Inventories.FirstOrDefaultAsync(x => x.Id == id);
-            return inv;
+            var inv = await _context.Inventories.FirstOrDefaultAsync(i => i.Id == id);
+            if (inv != null) return true;
+            return false;
         }
     }
 }

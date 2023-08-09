@@ -9,5 +9,11 @@ namespace LootBoxAPI.Services.Interfaces
        string CreateToken(User user);
        void AddBalance(int userId,float amount);
        void RemoveBalance(int userId, float amount);
+       User CreateUser(string username, byte[] passwordHash, byte[] passwordSalt);
+       bool hasUsername(string username);
+       Task<float> GetBalance(int userId);
+       Task<string> GetUsername(int id);
+        Task<User> GetUserByUsername(string username);
+
     }
 }

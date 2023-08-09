@@ -1,12 +1,12 @@
 ﻿using LootBoxAPI.Data;
 using LootBoxAPI.DTO;
 using LootBoxAPI.Models;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RandomBoxAPI.Repository.Interfaces;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -17,12 +17,12 @@ namespace LootBoxAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IRepository<User,int> _userRepository;
         private readonly IUserService _userService;
-        private readonly IInventoryRepository _inventoryRepository;
+        private readonly IRepository<Inventory,int> _inventoryRepository;
         private readonly ApplicationDbContext _context;
 
-        public UserController(IUserRepository userRepository, IUserService userService, IInventoryRepository inventoryRepository, ApplicationDbContext context)
+        public UserController(IRepository<User,int> userRepository, IUserService userService, IRepository<Inventory,int> inventoryRepository, ApplicationDbContext context)
         {
             _userRepository = userRepository;
             _userService = userService;
@@ -36,7 +36,7 @@ namespace LootBoxAPI.Controllers
         {
             try
             {
-                var users = await _userRepository.GetUsers();
+                var users = await _userRepository.GetAll();
                 return Ok(users);
             }
             catch (Exception)
@@ -57,7 +57,7 @@ namespace LootBoxAPI.Controllers
             {
                 return BadRequest("Invalid userId in token");
             }
-            var balance = await _userRepository.GetBalance(userId);
+            var balance = await _userService.GetBalance(userId);
             return Ok(balance);
         }
 
@@ -67,13 +67,13 @@ namespace LootBoxAPI.Controllers
         {
             try
             {
-                if (_userRepository.hasUsername(register_request.Username))
+                if (_userService.hasUsername(register_request.Username))
                 {
                     return BadRequest("User already exists");
                 }
 
                 _userService.CreatePasswordHash(register_request.Password, out byte[] passwordHash, out byte[] passwordSalt);
-                var user = _userRepository.CreateUser(register_request.Username, passwordHash, passwordSalt);
+                var user = _userService.CreateUser(register_request.Username, passwordHash, passwordSalt);
                 await _context.AddAsync(user);
                 _userRepository.Save();
                 return Ok("User created");
@@ -90,12 +90,12 @@ namespace LootBoxAPI.Controllers
         {
             try
             {
-                if (!_userRepository.hasUsername(login_request.Username))
+                if (!_userService.hasUsername(login_request.Username))
                 {
                     return BadRequest("Username or password is incorrect. Please try again.");
                 }
 
-                User user = await _userRepository.GetUserByUsername(login_request.Username);
+                User user = await _userService.GetUserByUsername(login_request.Username);
                 if (!_userService.VarifyPasswordHash(login_request.Password, user.PasswordHash, user.PasswordSalt))
                 {
                     return BadRequest("Username or password is incorrect. Please try again.");

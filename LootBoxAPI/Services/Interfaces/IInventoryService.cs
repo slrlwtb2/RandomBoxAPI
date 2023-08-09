@@ -1,4 +1,5 @@
-﻿using LootBoxAPI.Models;
+﻿using LootBoxAPI.DTO;
+using LootBoxAPI.Models;
 using RandomBoxAPI.Models;
 using static LootBoxAPI.Models.Item;
 
@@ -13,6 +14,10 @@ namespace LootBoxAPI.Services.Interfaces
         Task<bool> AlreadyHaveItem(int itemId, int userId);
         Task<int> GetQuantity(int itemId, int userId);
         Task<Item> OpenBox(List<BoxItem> items);
+        Task<bool> CheckUserAndItemExist(int userId, int itemId);
         Tier GetRandomRarity();
+        Task RemoveItemInInventroy(int itemId, int userId);
+        Task<List<InventoryDTO>> GetInventoryItemListByUserIdAsync(int id);
+        Task<Inventory> AddOrUpdate(Inventory inventory);
     }
 }

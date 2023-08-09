@@ -1,6 +1,5 @@
 ﻿using LootBoxAPI.Data;
 using LootBoxAPI.Models;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RandomBoxAPI.DTO;
 using RandomBoxAPI.Models;
+using RandomBoxAPI.Repository.Interfaces;
 using System.Threading.Tasks;
 
 namespace LootBoxAPI.Controllers
@@ -18,12 +18,12 @@ namespace LootBoxAPI.Controllers
     [ApiController]
     public class ItemController : ControllerBase
     {
-        private readonly IItemRepository _itemsRepository;
+        private readonly IRepository<Item,int> _itemsRepository;
         private readonly IItemService _itemsService;
         private readonly ApplicationDbContext _context;
 
         public ItemController(
-            IItemRepository itemListRepository,
+            IRepository<Item, int> itemListRepository,
             IItemService itemListService,
             ApplicationDbContext context)
         {
@@ -36,22 +36,22 @@ namespace LootBoxAPI.Controllers
         [HttpGet("GetItems"), Authorize]
         public async Task<IActionResult> GetItems()
         {
-            var items = await _itemsRepository.GetItemsAsync();
+            var items = await _itemsRepository.GetAll();
             return Ok(items);
         }
         [HttpGet("GetItemNameById/{itemId}"), Authorize]
         public async Task<IActionResult> GetItemNameById(int itemId)
         {
-            var item = await _itemsRepository.GetItembyIdAsync(itemId);
+            var item = await _itemsRepository.GetById(itemId);
             return Ok(item.Name);
         }
         // GET: api/Item/GetItemDiscriminator
         [HttpGet("GetItemDiscriminator/{itemId}")]
         public async Task<IActionResult> GetItemDiscriminator(int itemId)
         {
-            if (await _itemsRepository.ItemExist(itemId))
+            if (await _itemsRepository.Exist(itemId))
             {
-                var item = await _itemsRepository.GetItembyIdAsync(itemId);
+                var item = await _itemsRepository.GetById(itemId);
                 if (_itemsService.AreBox(item))
                 {
                     return Ok("Box");
@@ -72,7 +72,7 @@ namespace LootBoxAPI.Controllers
         public async Task<IActionResult> CreateItem(string name, int rarity, float price)
         {
             var item = _itemsService.CreateItem(name, rarity, price);
-            await _itemsRepository.InsertItem(item);
+            await _itemsRepository.Add(item);
             await _context.SaveChangesAsync();
             return Ok(item);
         }
@@ -82,7 +82,7 @@ namespace LootBoxAPI.Controllers
         public async Task<IActionResult> CreateBox(string name, int rarity, float price)
         {
             var item = _itemsService.CreateBox(name, rarity, price);
-            await _itemsRepository.InsertItem(item);
+            await _itemsRepository.Add(item);
             await _context.SaveChangesAsync();
             return Ok(item);
         }
@@ -91,7 +91,7 @@ namespace LootBoxAPI.Controllers
         [HttpDelete("DeleteItem/{id}"), Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteItem(int id)
         {
-            var item = await _itemsRepository.GetItembyIdAsync(id);
+            var item = await _itemsRepository.GetById(id);
             _context.Items.Remove(item);
             await _context.SaveChangesAsync();
             return Ok(item.Name + " deleted");
@@ -101,13 +101,17 @@ namespace LootBoxAPI.Controllers
         [HttpPut("UpdateItem/{id}/{name}/{rarity}/{price}"), Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateItem(int id, string name, int rarity, float price)
         {
-            if (await _itemsRepository.ItemExist(id))
+            var existingItem = await _itemsRepository.GetById(id);
+
+            if (existingItem != null)
             {
-                var original = await _itemsRepository.GetItembyIdAsync(id);
-                Item update = _itemsService.CreateItem(name, rarity, price);
-                update.Id = id;
-                await _itemsRepository.UpdateItem(original, update);
+                existingItem.Name = name;
+                existingItem.Rarity = (Item.Tier)rarity;
+                existingItem.Price = price;
+
+                _itemsRepository.Update(existingItem);
                 await _context.SaveChangesAsync();
+
                 return Ok("Item updated");
             }
             else
@@ -125,8 +129,8 @@ namespace LootBoxAPI.Controllers
             BoxItem boxItem = new BoxItem();
             if (await _itemsService.BoxAndItemExist(boxId, itemId))
             {
-                box = await _itemsRepository.GetItembyIdAsync(boxId);
-                item = await _itemsRepository.GetItembyIdAsync(itemId);
+                box = await _itemsRepository.GetById(boxId);
+                item = await _itemsRepository.GetById(itemId);
             }
             else
             {
@@ -158,7 +162,6 @@ namespace LootBoxAPI.Controllers
         [HttpGet("GetBoxes"), Authorize]
         public async Task<IActionResult> GetBoxes()
         {
-            //var boxes = await _context.Items.Where(i => i.Discriminator == "Box").ToListAsync();
             var boxes = await _context.Items.Where(i => i.Discriminator == "Box").Select(i => new ItemDTO()
             {
                 Id = i.Id,
@@ -174,7 +177,7 @@ namespace LootBoxAPI.Controllers
         [HttpGet("GetItemsinBox/{boxId}"), Authorize]
         public async Task<IActionResult> GetItemsInBox(int boxId)
         {
-            var items = await _itemsRepository.GetItemInBox(boxId);
+            var items = await _itemsService.GetItemInBox(boxId);
             return Ok(items);
         }
 
@@ -184,9 +187,9 @@ namespace LootBoxAPI.Controllers
         {
             if (file != null && file.Length > 0)
             {
-                if (await _itemsRepository.ItemExist(itemid))
+                if (await _itemsRepository.Exist(itemid))
                 {
-                    var item = await _itemsRepository.GetItembyIdAsync(itemid);
+                    var item = await _itemsRepository.GetById(itemid);
                     using (var memoryStream = new MemoryStream())
                     {
                         await file.CopyToAsync(memoryStream);
@@ -209,7 +212,7 @@ namespace LootBoxAPI.Controllers
         public async Task<IActionResult> GetImage(int itemid)
         {
             
-            if (await _itemsRepository.ItemExist(itemid))
+            if (await _itemsRepository.Exist(itemid))
             {
                 var item = await _context.Items.FirstOrDefaultAsync(p => p.Id == itemid);
                 return File(item.ImageData, "image/png");

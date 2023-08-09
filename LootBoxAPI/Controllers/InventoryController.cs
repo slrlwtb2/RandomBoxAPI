@@ -1,12 +1,12 @@
 ﻿using LootBoxAPI.Data;
 using LootBoxAPI.Models;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RandomBoxAPI.DTO;
+using RandomBoxAPI.Repository.Interfaces;
 using System.Security.Claims;
 
 namespace LootBoxAPI.Controllers
@@ -15,16 +15,16 @@ namespace LootBoxAPI.Controllers
     [ApiController]
     public class InventoryController : ControllerBase
     {
-        private readonly IInventoryRepository _inventoryRepository;
+        private readonly IRepository<Inventory,int> _inventoryRepository;
         private readonly IInventoryService _inventoryService;
         private readonly IItemService _itemService;
-        private readonly IItemRepository _itemsRepository;
+        private readonly IRepository<Item,int> _itemsRepository;
         private readonly ApplicationDbContext _context;
 
         public InventoryController(
-            IInventoryRepository inventoryRepository,
+            IRepository<Inventory, int> inventoryRepository,
             IInventoryService inventoryService,
-            IItemRepository itemsRepository,
+            IRepository<Item, int> itemsRepository,
             IItemService itemService,
             ApplicationDbContext context)
         {
@@ -49,7 +49,7 @@ namespace LootBoxAPI.Controllers
             {
                 return BadRequest("Invalid userId in token");
             }
-            var inv = await _inventoryRepository.GetInventoryItemListByUserIdAsync(userId);
+            var inv = await _inventoryService.GetInventoryItemListByUserIdAsync(userId);
             return Ok(inv);
         }
 
@@ -114,24 +114,26 @@ namespace LootBoxAPI.Controllers
             // OpenBox Logic
             if (await _inventoryService.AlreadyHaveItem(boxid, userId))
             {
-                var box = await _itemsRepository.GetItembyIdAsync(boxid);
+                var box = await _itemsRepository.GetById(boxid);
 
                 if (_itemService.AreBox(box))
                 {
-                    var listOfItems = await _itemsRepository.GetItemInBox(boxid);
-                    var item = await _inventoryService.OpenBox(listOfItems);
+                    var listOfItems = await _itemService.GetItemInBox(boxid);
+                    var randomItem = await _inventoryService.OpenBox(listOfItems);
                     ItemDTO itemDTO = new ItemDTO()
                     {
-                        Id = item.Id,
-                        Name = item.Name,
-                        Rarity = item.Rarity.ToString(),
-                        Price = item.Price,
-                        ImageData = item.ImageData.IsNullOrEmpty() ? false : true
+                        Id = randomItem.Id,
+                        Name = randomItem.Name,
+                        Rarity = randomItem.Rarity.ToString(),
+                        Price = randomItem.Price,
+                        ImageData = randomItem.ImageData.IsNullOrEmpty() ? false : true
 
                     };
-                    if (await _inventoryService.AlreadyHaveItem(item.Id, userId))
+                    if (await _inventoryService.AlreadyHaveItem(randomItem.Id, userId))
                     {
-                        var updateinventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == item.Id);
+                        var updateinventory = await _context.Inventories
+                        .FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == randomItem.Id);
+
                         updateinventory.Quantity += 1;
                         _context.SaveChanges();
                     }
@@ -140,14 +142,16 @@ namespace LootBoxAPI.Controllers
                         Inventory Inventory = new Inventory()
                         {
                             UserId = userId,
-                            ItemId = item.Id,
+                            ItemId = randomItem.Id,
                             Quantity = 1
                         };
                         await _inventoryRepository.Add(Inventory);
                         _context.SaveChanges();
                     }
-                    var inventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == boxid);
-                    inventory.Quantity -= 1;
+                    var usedBoxItem = await _context.Inventories
+                    .FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == boxid);
+                    
+                    usedBoxItem.Quantity -= 1;
                     _context.SaveChanges();
                     return Ok(itemDTO);
                 }
@@ -172,7 +176,7 @@ namespace LootBoxAPI.Controllers
             // BuyBox Logic
             if (await _context.Users.AnyAsync(u => u.Id == userId))
             {
-                Item box = await _itemsRepository.GetItembyIdAsync(boxId);
+                Item box = await _itemsRepository.GetById(boxId);
                 User user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 if (_itemService.AreBox(box))
                 {

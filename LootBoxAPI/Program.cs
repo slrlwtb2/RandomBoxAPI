@@ -1,13 +1,14 @@
 using LootBoxAPI.Controllers;
 using LootBoxAPI.Data;
+using LootBoxAPI.Models;
 using LootBoxAPI.Repository;
-using LootBoxAPI.Repository.Interfaces;
 using LootBoxAPI.Services;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using RandomBoxAPI.Repository.Interfaces;
 using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 
@@ -17,15 +18,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(
 builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+builder.Services.AddScoped<IRepository<User,int>, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-///////////////////////////////////////////////////////////////
-builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+
+builder.Services.AddScoped<IRepository<Inventory,int>, InventoryRepository>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
-///////////////////////////////////////////////////////////////
-builder.Services.AddScoped<IItemRepository, ItemRepository>();
+
+builder.Services.AddScoped<IRepository<Item,int>, ItemRepository>();
 builder.Services.AddScoped<IItemService, ItemService>();
-builder.Services.AddScoped<InventoryController>();
+
+//builder.Services.AddScoped<InventoryController>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
