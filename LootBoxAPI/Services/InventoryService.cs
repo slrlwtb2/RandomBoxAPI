@@ -70,13 +70,16 @@ namespace LootBoxAPI.Services
             if (await CheckUserAndItemExist(userId,itemId))
             {
                 var inventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == itemId);
-                var quantity = await GetQuantity(itemId, userId);
-                var sellValue = await _itemRepository.GetById(itemId);
-                if (quantity - amount < 0 || amount > quantity) { throw new ArgumentException("insufficient amount of item's quantity", nameof(quantity)); }
-                inventory.Quantity -= amount;
-                var user = await _userRepository.GetById(userId);
-                user.Balance += sellValue.Price * amount;
-                return inventory; 
+                if (inventory != null)
+                {
+                    var quantity = await GetQuantity(itemId, userId);
+                    var sellValue = await _itemRepository.GetById(itemId);
+                    if (quantity - amount < 0 || amount > quantity) { throw new ArgumentException("insufficient amount of item's quantity", nameof(quantity)); }
+                    inventory.Quantity -= amount;
+                    var user = await _userRepository.GetById(userId);
+                    user.Balance += sellValue.Price * amount;
+                    return inventory;  
+                }
             }
             throw new ArgumentException("User or Item do not exist");
         }
@@ -85,10 +88,13 @@ namespace LootBoxAPI.Services
             if (await CheckUserAndItemExist(userId, itemId))
             {
                 var inventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == itemId);
-                var quantity = await GetQuantity(itemId, userId);
-                if (quantity - amount < 0 || amount > quantity) { throw new ArgumentException("insufficient amount of item's quantity", nameof(quantity)); }
-                inventory.Quantity -= amount;
-                return inventory;
+                if (inventory !=null)
+                {
+                    var quantity = await GetQuantity(itemId, userId);
+                    if (quantity - amount < 0 || amount > quantity) { throw new ArgumentException("insufficient amount of item's quantity", nameof(quantity)); }
+                    inventory.Quantity -= amount;
+                    return inventory; 
+                }
             }
             throw new ArgumentException("User or Item do not exist");
         }
@@ -100,7 +106,11 @@ namespace LootBoxAPI.Services
         public async Task<int> GetQuantity(int itemId, int userId)
         {
             var containItem = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == itemId);
-            return containItem.Quantity;
+            if (containItem != null)
+            {
+                return containItem.Quantity; 
+            }
+            return 0;
         }
         public async Task<Item> OpenBox(List<BoxItem> items)
         {
@@ -178,14 +188,17 @@ namespace LootBoxAPI.Services
                 if (await _context.Inventories.AnyAsync(inv => inv.UserId == userId && inv.ItemId == itemId))
                 {
                     var inventory= await _context.Inventories.FirstOrDefaultAsync(inv => inv.ItemId == itemId && inv.UserId == userId);
-                    if (inventory.Quantity > 1)
+                    if (inventory != null)
                     {
-                        inventory.Quantity -= 1;
-                        _inventoryRepository.Update(inventory);
-                    }
-                    else
-                    {
-                        _context.Inventories.Remove(inventory);
+                        if (inventory.Quantity > 1)
+                        {
+                            inventory.Quantity -= 1;
+                            _inventoryRepository.Update(inventory);
+                        }
+                        else
+                        {
+                            _context.Inventories.Remove(inventory);
+                        } 
                     }
                 }
             }
