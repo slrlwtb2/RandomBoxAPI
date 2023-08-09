@@ -56,10 +56,12 @@ namespace LootBoxAPI.Services
             if (await CheckUserAndItemExist(userId,itemId))
             {
                 var inventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == itemId);
-                var quantity = await GetQuantity(itemId, userId);
-                inventory.Quantity = quantity + amount;
-                _inventoryRepository.Update(inventory);
-                return inventory; 
+                if (inventory != null)
+                {
+                    inventory.Quantity += amount;
+                    _inventoryRepository.Update(inventory);
+                    return inventory;
+                }
             }
             throw new ArgumentException("User or Item do not exist");
         }
