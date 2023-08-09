@@ -103,17 +103,30 @@ namespace LootBoxAPI.Services
         public string GetItemName(int itemid)
         {
             var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
-            return item.Name;
+            if (item != null)
+            {
+                return item.Name; 
+            }
+            return string.Empty;
         }
         public string GetItemRarity(int itemid)
         {
             var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
-            return item.Rarity.ToString();
+            if (item != null)
+            {
+                return item.Rarity.ToString(); 
+            }
+            return string.Empty;
         }
+        
         public float GetItemPrice(int itemid)
         {
             var item = _context.Items.FirstOrDefault(b => b.Id == itemid);
-            return item.Price;
+            if (item != null)
+            {
+                return item.Price; 
+            }
+            return 0f;
         }
 
     }
