@@ -47,18 +47,26 @@ namespace LootBoxAPI.Controllers
         [HttpGet("GetBalance"), Authorize]
         public async Task<IActionResult> GetBalance()
         {
-            // Retrieve the userId from the JWT token
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            try
             {
-                return BadRequest("Invalid token");
+                // Retrieve the userId from the JWT token
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    return BadRequest("Invalid token");
+                }
+                if (!int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return BadRequest("Invalid userId in token");
+                }
+                var balance = await _userService.GetBalance(userId);
+                return Ok(balance);
             }
-            if (!int.TryParse(userIdClaim.Value, out int userId))
+            catch (Exception)
             {
-                return BadRequest("Invalid userId in token");
+
+                throw;
             }
-            var balance = await _userService.GetBalance(userId);
-            return Ok(balance);
         }
 
         // POST: api/User/register
