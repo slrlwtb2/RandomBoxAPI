@@ -83,17 +83,30 @@ namespace LootBoxAPI.Services
         public async Task<float> GetBalance(int userId)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                throw new ArgumentException($"User not found.");
+            }
             return user.Balance;
         }
         public async Task<string> GetUsername(int id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null)
+            {
+                throw new ArgumentException($"User not found.");
 
+            }
             return user.Username;
         }
         public async Task<User> GetUserByUsername(string username)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+            {
+                throw new ArgumentException($"User with username '{username}' not found.");
+            }
+            return user;
         }
     }
 }
