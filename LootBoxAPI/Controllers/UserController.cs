@@ -83,7 +83,7 @@ namespace LootBoxAPI.Controllers
                 _userService.CreatePasswordHash(register_request.Password, out byte[] passwordHash, out byte[] passwordSalt);
                 var user = _userService.CreateUser(register_request.Username, passwordHash, passwordSalt);
                 await _context.AddAsync(user);
-                _userRepository.Save();
+                await _userRepository.Save();
                 return Ok("User created");
             }
             catch (Exception)
