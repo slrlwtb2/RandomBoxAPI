@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RandomBoxAPI.Filters;
 using RandomBoxAPI.Repository.Interfaces;
 using System;
 using System.Security.Claims;
@@ -41,10 +42,12 @@ namespace LootBoxAPI.Controllers
             }
             catch (Exception)
             {
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
         [HttpGet("GetBalance"), Authorize]
+        [User_ValidateUserIdFilter]
         public async Task<IActionResult> GetBalance()
         {
             try
@@ -65,7 +68,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -88,7 +92,8 @@ namespace LootBoxAPI.Controllers
             }
             catch (Exception)
             {
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -114,7 +119,8 @@ namespace LootBoxAPI.Controllers
             }
             catch (Exception)
             {
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
     }

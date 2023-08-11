@@ -44,7 +44,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
         [HttpGet("GetItemNameById/{itemId}"), Authorize]
@@ -58,7 +59,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
         // GET: api/Item/GetItemDiscriminator
@@ -87,7 +89,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -105,7 +108,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -123,7 +127,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -141,7 +146,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -172,7 +178,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -218,7 +225,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -241,7 +249,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -257,7 +266,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 
@@ -292,7 +302,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
         // GET: api/Item/GetImage/{id}
@@ -315,7 +326,8 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
+
             }
         }
 

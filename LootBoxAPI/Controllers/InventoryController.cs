@@ -1,4 +1,5 @@
-﻿using LootBoxAPI.Data;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using LootBoxAPI.Data;
 using LootBoxAPI.Models;
 using LootBoxAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RandomBoxAPI.DTO;
+using RandomBoxAPI.Filters;
 using RandomBoxAPI.Repository.Interfaces;
 using System.Security.Claims;
 
@@ -19,6 +21,7 @@ namespace LootBoxAPI.Controllers
         private readonly IInventoryService _inventoryService;
         private readonly IItemService _itemService;
         private readonly IRepository<Item,int> _itemsRepository;
+        private readonly IRepository<User, int> _userRepository;
         private readonly ApplicationDbContext _context;
 
         public InventoryController(
@@ -26,17 +29,20 @@ namespace LootBoxAPI.Controllers
             IInventoryService inventoryService,
             IRepository<Item, int> itemsRepository,
             IItemService itemService,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IRepository<User, int> userRepository)
         {
             _inventoryRepository = inventoryRepository;
             _inventoryService = inventoryService;
             _context = context;
             _itemService = itemService;
             _itemsRepository = itemsRepository;
+            _userRepository = userRepository;
         }
 
         // GET: api/Inventory/GetById
         [HttpGet("GetById"), Authorize]
+        [User_ValidateUserIdFilter]
         public async Task<IActionResult> GetbyId()
         {
             try
@@ -57,7 +63,7 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
             }
         }
 
@@ -82,7 +88,7 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
             }
         }
 
@@ -117,7 +123,7 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
             }
         }
 
@@ -188,74 +194,73 @@ namespace LootBoxAPI.Controllers
             catch (Exception)
             {
 
-                throw;
+                return StatusCode(500, "An unexpected error occurred while deleting the product.Please try again later.");
             }
         }
         // PUT: api/Item/BuyBox
-        [HttpPut("BuyBox/{boxId}"), Authorize]
+        [HttpPut("BuyBox/{boxId}")]
+        [Authorize]
         public async Task<IActionResult> BuyBox(int boxId)
         {
             try
             {
-                // Retrieve the userId from the JWT token
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null)
                 {
                     return BadRequest("Invalid token");
                 }
+
                 if (!int.TryParse(userIdClaim.Value, out int userId))
                 {
                     return BadRequest("Invalid userId in token");
                 }
-                // BuyBox Logic
-                if (await _context.Users.AnyAsync(u => u.Id == userId))
+
+                if (!await _userRepository.Exist(userId))
                 {
-                    Item box = await _itemsRepository.GetById(boxId);
-                    User user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                    if (_itemService.AreBox(box))
-                    {
-                        if (user.Balance >= box.Price)
-                        {
-                            user.Balance -= box.Price;
-                            if (await _inventoryService.AlreadyHaveItem(boxId, userId))
-                            {
-                                var updateinventory = await _context.Inventories.FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == boxId);
-                                updateinventory.Quantity += 1;
-                                _context.SaveChanges();
-                                return Ok(updateinventory);
-                            }
-                            else
-                            {
-                                Inventory Inventory = new Inventory()
-                                {
-                                    UserId = userId,
-                                    ItemId = boxId,
-                                    Quantity = 1
-                                };
-                                await _inventoryRepository.Add(Inventory);
-                                _context.SaveChanges();
-                                return Ok(Inventory);
-                            }
-                        }
-                        else
-                        {
-                            return BadRequest($"Controller: Insufficient balance, {user.Username} don't have enough credits");
-                        }
-                    }
-                    else
-                    {
-                        return BadRequest($"Controller: boxId {boxId} is not a box");
-                    }
+                    return NotFound($"Controller: UserId {userId} does not exist");
+                }
+
+                Item box = await _itemsRepository.GetById(boxId);
+                if (!_itemService.AreBox(box))
+                {
+                    return BadRequest($"Controller: boxId {boxId} is not a box");
+                }
+
+                User user = await _userRepository.GetById(userId);
+                if (user.Balance < box.Price)
+                {
+                    return BadRequest($"Controller: Insufficient balance, {user.Username} doesn't have enough credits");
+                }
+
+                user.Balance -= box.Price;
+
+                var updateinventory = await _context.Inventories
+                    .FirstOrDefaultAsync(inv => inv.UserId == userId && inv.ItemId == boxId);
+
+                if (updateinventory != null)
+                {
+                    updateinventory.Quantity += 1;
                 }
                 else
                 {
-                    return NotFound($"Controller:UserId {userId} does not exists");
+                    var inventory = new Inventory
+                    {
+                        UserId = userId,
+                        ItemId = boxId,
+                        Quantity = 1
+                    };
+                    await _inventoryRepository.Add(inventory);
                 }
+                _context.SaveChanges();
+
+                return Ok(updateinventory);
             }
             catch (Exception)
             {
-                throw;
+                return StatusCode(500, "An unexpected error occurred while processing the request. Please try again later.");
             }
         }
+
     }
 }
+
